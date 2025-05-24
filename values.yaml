@@ -58,11 +58,23 @@ configs:
     application.instanceLabelKey: argocd.argoproj.io/instance
     # url: https://argocd.example.com
   rbac:
+    create: false
     # policy.default: role:readonly
     # policy.csv: |
     #   g, my-group, role:admin
   secret:
+    createSecret: false
     # extra secrets can be defined here
 
 # Add more customizations as needed
 # For full list of options, see: https://github.com/argoproj/argo-helm/tree/main/charts/argo-cd
+
+# NOTE:
+# If you see an error about CRDs already existing with different ownership,
+# you must either:
+#   1. Uninstall the previous ArgoCD Helm release (with the old release name/namespace), or
+#   2. Manually delete the existing CRDs before installing this release:
+#      kubectl delete crd applications.argoproj.io appprojects.argoproj.io applicationsets.argoproj.io
+#
+# See: https://argo-cd.readthedocs.io/en/stable/operator-manual/upgrading/ and
+# https://github.com/argoproj/argo-helm/issues/373
