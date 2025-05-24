@@ -1,0 +1,68 @@
+# Customize ArgoCD Helm chart values here
+
+server:
+  service:
+    type: LoadBalancer
+  ingress:
+    enabled: true
+    annotations:
+      kubernetes.io/ingress.class: nginx
+      nginx.ingress.kubernetes.io/ssl-passthrough: "true"
+    hosts:
+      - argocd.example.com
+    tls:
+      - hosts:
+          - argocd.example.com
+        secretName: argocd-tls
+  extraArgs: []
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 250m
+      memory: 256Mi
+
+controller:
+  enabled: true
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 250m
+      memory: 256Mi
+
+repoServer:
+  enabled: true
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 250m
+      memory: 256Mi
+
+applicationSet:
+  enabled: true
+
+redis:
+  enabled: true
+
+dex:
+  enabled: true
+  # config: {}
+
+configs:
+  cm:
+    application.instanceLabelKey: argocd.argoproj.io/instance
+    # url: https://argocd.example.com
+  rbac:
+    # policy.default: role:readonly
+    # policy.csv: |
+    #   g, my-group, role:admin
+  secret:
+    # extra secrets can be defined here
+
+# Add more customizations as needed
+# For full list of options, see: https://github.com/argoproj/argo-helm/tree/main/charts/argo-cd
