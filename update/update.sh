@@ -1,0 +1,1 @@
+helm upgrade argocd argo/argo-cd --namespace argocd --values values.yaml

@@ -1,0 +1,32 @@
+// https://docs.github.com/en/copilot/how-tos/context/model-context-protocol/extending-copilot-chat-with-mcp
+{
+    "inputs": [
+        // The "inputs" section defines the inputs required for the MCP server configuration.
+        {
+            "type": "promptString"
+        }
+    ],
+    "servers": {
+        // The "servers" section defines the MCP servers you want to use.
+        "fetch": {
+            "command": "uvx",
+            "args": ["mcp-server-fetch"]
+        },
+        // "kubernetes": {
+        //     "command": "uvx",
+        //     "args": [
+        //         "mcp-kubernetes-server"
+        //     ],
+        //     "env": {
+        //         "KUBECONFIG": "/Users/rodneywells/.kube/config"
+        //     }
+        // },
+        "kubernetes": {
+            "command": "npx",
+            "args": [
+                "-y",
+                "kubernetes-mcp-server@latest"
+            ]
+        }
+    }
+}
