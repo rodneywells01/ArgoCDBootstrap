@@ -2,18 +2,20 @@
 
 server:
   service:
-    type: LoadBalancer
+    type: ClusterIP
   ingress:
     enabled: true
+    ingressClassName: nginx
     annotations:
-      kubernetes.io/ingress.class: nginx
+      cert-manager.io/cluster-issuer: letsencrypt-prod
       nginx.ingress.kubernetes.io/ssl-passthrough: "true"
+      nginx.ingress.kubernetes.io/backend-protocol: HTTPS
     hosts:
-      - argocd.example.com
+      - tradely.live
     tls:
       - hosts:
-          - argocd.example.com
-        secretName: argocd-tls
+          - tradely.live
+        secretName: argocd-server-tls
   extraArgs: []
   resources:
     limits:
@@ -56,7 +58,7 @@ dex:
 configs:
   cm:
     application.instanceLabelKey: argocd.argoproj.io/instance
-    # url: https://argocd.example.com
+    url: https://tradely.live
   rbac:
     create: false
     # policy.default: role:readonly
