@@ -1,0 +1,104 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: argo-workflows
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://argoproj.github.io/argo-helm
+    targetRevision: 0.46.1
+    chart: argo-workflows
+    helm:
+      releaseName: argo-workflows
+      valuesObject:
+        # Keep workflows constrained to one namespace for tighter blast radius and fewer cluster-wide bindings.
+        singleNamespace: true
+
+        workflow:
+          serviceAccount:
+            create: true
+            name: argo-workflow
+          rbac:
+            create: true
+
+        controller:
+          replicas: 1
+          parallelism: 4
+          namespaceParallelism: 2
+          workflowWorkers: 4
+          workflowTTLWorkers: 2
+          podCleanupWorkers: 1
+          cronWorkflowWorkers: 1
+          nodeEvents:
+            enabled: false
+          workflowEvents:
+            enabled: false
+          resources:
+            requests:
+              cpu: 50m
+              memory: 192Mi
+            limits:
+              cpu: 250m
+              memory: 384Mi
+
+        server:
+          enabled: true
+          replicas: 1
+          authModes:
+            - server
+          ingress:
+            enabled: true
+            ingressClassName: nginx
+            annotations:
+              cert-manager.io/cluster-issuer: letsencrypt-prod
+              nginx.ingress.kubernetes.io/backend-protocol: HTTP
+              nginx.ingress.kubernetes.io/ssl-redirect: "true"
+            hosts:
+              - workflows.tradely.live
+            paths:
+              - /
+            pathType: Prefix
+            tls:
+              - secretName: argo-workflows-tls
+                hosts:
+                  - workflows.tradely.live
+          resources:
+            requests:
+              cpu: 25m
+              memory: 96Mi
+            limits:
+              cpu: 200m
+              memory: 192Mi
+
+        executor:
+          resources:
+            requests:
+              cpu: 25m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+
+        mainContainer:
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argo-workflows
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
