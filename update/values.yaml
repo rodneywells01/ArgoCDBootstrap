@@ -17,7 +17,7 @@ server:
       cpu: 250m
       memory: 512Mi
     requests:
-      cpu: 250m
+      cpu: 100m
       memory: 256Mi
 
 controller:
@@ -27,7 +27,7 @@ controller:
       cpu: 250m
       memory: 512Mi
     requests:
-      cpu: 250m
+      cpu: 100m
       memory: 256Mi
 
 repoServer:
@@ -37,7 +37,7 @@ repoServer:
       cpu: 250m
       memory: 512Mi
     requests:
-      cpu: 250m
+      cpu: 100m
       memory: 256Mi
 
 applicationSet:
@@ -61,6 +61,8 @@ configs:
     #   g, my-group, role:admin
   secret:
     createSecret: true
+    extra:
+      "server.secretkey": "uVZUo7gwMC9dIMQPdIH8ti7EDThenl+YYyqSb2XDD1s="
     # extra secrets can be defined here
 
 # Add more customizations as needed
