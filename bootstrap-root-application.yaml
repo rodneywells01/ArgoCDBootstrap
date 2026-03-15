@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: pycon-bootstrap
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/rodneywells01/ArgoCDBootstrap.git
+    targetRevision: master
+    path: .
+    directory:
+      recurse: true
+      include: "{argo-workflows/*-app.yaml,argocd-image-updater/*-app.yaml,argocd-image-updater/*-image-updater.yaml,cert-manager/*-app.yaml,kube-market-app/*-app.yaml}"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
