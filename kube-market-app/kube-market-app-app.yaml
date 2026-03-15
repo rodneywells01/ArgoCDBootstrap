@@ -4,7 +4,7 @@ metadata:
   name: kube-market-app
   namespace: argocd
   annotations:
-    argocd-image-updater.argoproj.io/image-list: app=ghcr.io/rodneywells01/kubemarketapp
+    argocd-image-updater.argoproj.io/image-list: app=ghcr.io/rodneywells01/kubemarketapp:latest
     argocd-image-updater.argoproj.io/app.update-strategy: digest
     argocd-image-updater.argoproj.io/app.allow-tags: regexp:^latest$
     argocd-image-updater.argoproj.io/app.helm.image-name: image.repository
