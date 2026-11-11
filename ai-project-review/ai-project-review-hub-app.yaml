@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ai-project-review-hub
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/rodneywells01/ArgoCDBootstrap.git
+    targetRevision: master
+    path: ai-project-review/hub
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: ai-project-review
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

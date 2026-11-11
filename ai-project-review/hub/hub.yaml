@@ -1,0 +1,119 @@
+# AI Project Review V3 hub: shared context (Git over HTTPS) and a read-only,
+# password-protected UI at https://projects.tradely.live.
+# The PVC "context" (DigitalOcean volume) and the Secret "aipr-hub" (key: password)
+# are created outside Git. The image is built by deploy/build-hub.sh in the app repo.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aipr-hub
+  labels:
+    app: aipr-hub
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: aipr-hub
+  template:
+    metadata:
+      labels:
+        app: aipr-hub
+    spec:
+      automountServiceAccountToken: false
+      imagePullSecrets:
+        - name: context-registry
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: hub
+          image: registry.digitalocean.com/rodneywells-ai-project-review/context@sha256:9f7f015434be5e45859f8441d4b869e922dc0dc561ee2639b1807577593f3c59
+          ports:
+            - containerPort: 8080
+              name: http
+          env:
+            - name: AIPR_HUB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: aipr-hub
+                  key: password
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 30
+            failureThreshold: 5
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              memory: 384Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: state
+              mountPath: /data
+              subPath: hub
+            - name: temp
+              mountPath: /tmp
+      volumes:
+        - name: state
+          persistentVolumeClaim:
+            claimName: context
+        - name: temp
+          emptyDir:
+            sizeLimit: 256Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aipr-hub
+spec:
+  selector:
+    app: aipr-hub
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: aipr-hub
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "64m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-buffering: "off"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - projects.tradely.live
+      secretName: projects-tradely-live-tls
+  rules:
+    - host: projects.tradely.live
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: aipr-hub
+                port:
+                  name: http

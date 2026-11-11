@@ -13,7 +13,7 @@ spec:
     path: .
     directory:
       recurse: true
-      include: "{argo-workflows/*-app.yaml,argocd-image-updater/*-app.yaml,argocd-image-updater/*-image-updater.yaml,cert-manager/*-app.yaml,kube-market-app/*-app.yaml}"
+      include: "{argo-workflows/*-app.yaml,argocd-image-updater/*-app.yaml,argocd-image-updater/*-image-updater.yaml,cert-manager/*-app.yaml,kube-market-app/*-app.yaml,ai-project-review/*-app.yaml}"
   destination:
     server: https://kubernetes.default.svc
     namespace: argocd
