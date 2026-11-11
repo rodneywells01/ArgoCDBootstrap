@@ -1,0 +1,16 @@
+# REVIEW TEMPLATE ONLY. Not production AI Project Review configuration.
+enabled: true
+image:
+  repository: ghcr.io/example/private-app
+  digest: sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+auth:
+  existingSecret: private-app-oauth
+ingress:
+  enabled: false
+  host: app.example.invalid
+  className: ""
+  tlsSecret: ""
+persistence:
+  enabled: true
+  existingClaim: private-app-data
+  mountPath: /data
