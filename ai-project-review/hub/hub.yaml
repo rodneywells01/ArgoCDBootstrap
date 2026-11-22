@@ -32,7 +32,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: hub
-          image: registry.digitalocean.com/rodneywells-ai-project-review/context@sha256:9f7f015434be5e45859f8441d4b869e922dc0dc561ee2639b1807577593f3c59
+          image: registry.digitalocean.com/rodneywells-ai-project-review/context@sha256:c5d68f4d4a75bcfa9c18e7f7e3400f0f2feeb7ff7c4279581075ad09aaf4fb43
           ports:
             - containerPort: 8080
               name: http
