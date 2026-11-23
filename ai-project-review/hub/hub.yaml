@@ -32,7 +32,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: hub
-          image: registry.digitalocean.com/rodneywells-ai-project-review/context@sha256:c5d68f4d4a75bcfa9c18e7f7e3400f0f2feeb7ff7c4279581075ad09aaf4fb43
+          image: registry.digitalocean.com/rodneywells-ai-project-review/context@sha256:ac56e18b270534867b964ff58753d4ce11d37921107fbc9ab73ea9188e5b2b8e
           ports:
             - containerPort: 8080
               name: http
@@ -42,6 +42,21 @@ spec:
                 secretKeyRef:
                   name: aipr-hub
                   key: password
+            # The hub is a client of the workspaces repository on GitHub.
+            - name: AIPR_REPO_URL
+              value: https://github.com/rodneywells01/aipr-workspaces.git
+            - name: AIPR_CONTEXT_DIR
+              value: /data/v3/workspaces
+            - name: AIPR_GITHUB_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: aipr-hub
+                  key: github-token
+            - name: AIPR_GITHUB_WEBHOOK_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: aipr-hub
+                  key: webhook-secret
           readinessProbe:
             httpGet:
               path: /healthz
