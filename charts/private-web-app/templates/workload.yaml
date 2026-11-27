@@ -1,0 +1,133 @@
+{{- if .Values.enabled }}
+{{- $repo := required "image.repository is required" .Values.image.repository }}
+{{- $digest := required "image.digest is required" .Values.image.digest }}
+{{- if not (regexMatch "^sha256:[a-f0-9]{64}$" $digest) }}{{ fail "image.digest must be a sha256 digest" }}{{ end }}
+{{- $secret := required "auth.existingSecret is required" .Values.auth.existingSecret }}
+{{- $host := required "ingress.host is required for the OAuth callback, even without ingress" .Values.ingress.host }}
+{{- if or (contains "/" $host) (contains ":" $host) }}{{ fail "ingress.host must be a DNS hostname" }}{{ end }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}
+spec:
+  replicas: 1
+  # Prevent concurrent writers to a single app's persistent state.
+  strategy: {type: Recreate}
+  selector:
+    matchLabels: {app.kubernetes.io/instance: {{ .Release.Name | quote }}}
+  template:
+    metadata:
+      labels: {app.kubernetes.io/instance: {{ .Release.Name | quote }}}
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        fsGroup: 10001
+        seccompProfile: {type: RuntimeDefault}
+      {{- with .Values.image.pullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: app
+          image: {{ printf "%s@%s" $repo $digest | quote }}
+          ports: [{name: app, containerPort: {{ .Values.app.port }}}]
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: {drop: [ALL]}
+          resources:
+            {{- toYaml .Values.app.resources | nindent 12 }}
+          {{- with .Values.app.env }}
+          env:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          startupProbe:
+            tcpSocket: {port: app}
+            periodSeconds: 5
+            failureThreshold: 60
+          readinessProbe:
+            tcpSocket: {port: app}
+            periodSeconds: 10
+          {{- if .Values.persistence.enabled }}
+          volumeMounts:
+            - name: data
+              mountPath: {{ .Values.persistence.mountPath | quote }}
+          {{- end }}
+        - name: auth-proxy
+          image: {{ .Values.auth.image | quote }}
+          args:
+            - --provider=github
+            - --http-address=0.0.0.0:4180
+            - --upstream=http://127.0.0.1:{{ .Values.app.port }}
+            - --redirect-url=https://{{ $host }}/oauth2/callback
+            - --authenticated-emails-file=/allowlist/allowed-emails
+            - --scope=user:email
+            - --cookie-secure=true
+            - --cookie-samesite=lax
+            - --reverse-proxy=true
+            - --skip-provider-button=true
+            - --code-challenge-method=S256
+          env:
+            - name: OAUTH2_PROXY_CLIENT_ID
+              valueFrom: {secretKeyRef: {name: {{ $secret | quote }}, key: client-id}}
+            - name: OAUTH2_PROXY_CLIENT_SECRET
+              valueFrom: {secretKeyRef: {name: {{ $secret | quote }}, key: client-secret}}
+            - name: OAUTH2_PROXY_COOKIE_SECRET
+              valueFrom: {secretKeyRef: {name: {{ $secret | quote }}, key: cookie-secret}}
+          ports: [{name: proxy, containerPort: 4180}]
+          securityContext:
+            runAsUser: 65532
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: [ALL]}
+          resources:
+            {{- toYaml .Values.auth.resources | nindent 12 }}
+          readinessProbe:
+            httpGet: {path: /ready, port: proxy}
+          volumeMounts:
+            - name: allowlist
+              mountPath: /allowlist
+              readOnly: true
+      volumes:
+        - name: allowlist
+          secret:
+            secretName: {{ $secret | quote }}
+            items: [{key: allowed-emails, path: allowed-emails}]
+        {{- if .Values.persistence.enabled }}
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ required "persistence.existingClaim is required" .Values.persistence.existingClaim | quote }}
+        {{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}
+spec:
+  type: ClusterIP
+  selector: {app.kubernetes.io/instance: {{ .Release.Name | quote }}}
+  # Only the auth proxy is reachable through the Service.
+  ports: [{name: http, port: 80, targetPort: proxy}]
+{{- if .Values.ingress.enabled }}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ .Release.Name }}
+spec:
+  ingressClassName: {{ required "ingress.className is required" .Values.ingress.className | quote }}
+  tls:
+    - hosts: [{{ $host | quote }}]
+      secretName: {{ required "ingress.tlsSecret is required" .Values.ingress.tlsSecret | quote }}
+  rules:
+    - host: {{ $host | quote }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Release.Name }}
+                port: {name: http}
+{{- end }}
+{{- end }}

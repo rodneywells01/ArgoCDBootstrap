@@ -67,3 +67,27 @@ If a new `KubeMarketApp` image does not roll out automatically, check:
 4. `kubectl get imageupdater -n argocd` shows the `kube-market-app` `ImageUpdater` resource.
 5. `kubectl logs -n argocd deploy/argocd-image-updater-controller` shows Image Updater reconciling the app.
 6. `kubectl get deploy -n kube-market-app kube-market-app-mychart -o jsonpath='{.spec.template.spec.containers[0].image}'` shows the updated image reference.
+
+## Adding private apps without per-app infrastructure
+
+See [the staged hosting plan](notes/2026-11-08-hosting-plan.md) and
+`charts/private-web-app`. The chart defaults to disabled and is intentionally not
+wired into the root application. It provides a single-replica, authenticated
+application scaffold, conservative resource requests, existing-volume support,
+and a shared-ingress pattern. It does not make AI Project Review safe to expose:
+that app still needs hosted-mode work described in the plan.
+
+Read-only capacity/access audit (explicit context required):
+
+```bash
+./scripts/audit-hosting.sh YOUR_VERIFIED_CONTEXT
+```
+
+Offline validation:
+
+```bash
+helm lint charts/private-web-app
+python -m pip install PyYAML==6.0.2
+python -m unittest discover -s tests -v
+bash -n scripts/audit-hosting.sh
+```

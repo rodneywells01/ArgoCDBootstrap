@@ -1,0 +1,32 @@
+# Disabled by default. This chart is NOT wired into the bootstrap root.
+enabled: false
+image:
+  repository: ""
+  digest: "" # Required immutable sha256 digest; build/publish in the app repo.
+  pullSecrets: []
+app:
+  port: 3000
+  env: []
+  resources:
+    requests: {cpu: 100m, memory: 256Mi}
+    limits: {cpu: 500m, memory: 512Mi}
+# Existing secret only; never put credentials or the email allowlist in Git.
+# Keys: client-id, client-secret, cookie-secret, allowed-emails.
+auth:
+  existingSecret: ""
+  image: quay.io/oauth2-proxy/oauth2-proxy:v7.12.0
+  resources:
+    requests: {cpu: 10m, memory: 32Mi}
+    limits: {cpu: 100m, memory: 128Mi}
+ingress:
+  enabled: false
+  className: "" # Verify supported controller before enabling.
+  host: ""
+  tlsSecret: "" # Provision/verify certificate before activation.
+persistence:
+  enabled: false
+  existingClaim: "" # Chart does not provision billable volumes.
+  mountPath: /data
+networkPolicy:
+  # Namespace labels of the verified ingress controller; required when enabled.
+  ingressNamespaceLabels: {}
